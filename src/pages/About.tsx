@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const About = () => {
   const [isLoaded, setIsLoaded] = useState(false);
