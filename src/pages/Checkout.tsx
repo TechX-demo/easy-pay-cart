@@ -14,6 +14,16 @@ import {
   Lock, 
   CheckCircle2 
 } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+
+// Replace with your own Stripe publishable key
+const stripePromise = loadStripe("pk_test_TYooMQauvdEDq54NiTphI7jx");
 
 interface CheckoutFormData {
   fullName: string;
@@ -22,13 +32,10 @@ interface CheckoutFormData {
   city: string;
   zipCode: string;
   country: string;
-  cardNumber: string;
-  cardHolder: string;
-  expiryDate: string;
-  cvv: string;
 }
 
-const Checkout = () => {
+// Checkout form with Stripe integration
+const CheckoutForm = () => {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,12 +47,13 @@ const Checkout = () => {
     address: "",
     city: "",
     zipCode: "",
-    country: "",
-    cardNumber: "",
-    cardHolder: "",
-    expiryDate: "",
-    cvv: ""
+    country: ""
   });
+  
+  // Stripe hooks
+  const stripe = useStripe();
+  const elements = useElements();
+  const [cardError, setCardError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -61,17 +69,65 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
-    // Simulate payment processing
-    setTimeout(() => {
+    if (!stripe || !elements) {
+      // Stripe.js has not loaded yet
+      return;
+    }
+    
+    const cardElement = elements.getElement(CardElement);
+    
+    if (!cardElement) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setCardError(null);
+    
+    try {
+      // Create a payment method using the card element
+      const { error, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+        billing_details: {
+          name: formData.fullName,
+          email: formData.email,
+          address: {
+            city: formData.city,
+            line1: formData.address,
+            postal_code: formData.zipCode,
+            country: formData.country
+          }
+        }
+      });
+      
+      if (error) {
+        console.error(error);
+        setCardError(error.message || "Payment failed. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log("Payment method created successfully:", paymentMethod);
+      
+      // In a real application, you would send the payment method ID to your server
+      // to create a payment intent or charge the customer
+      
+      // For demo purposes, we'll simulate a successful payment
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setIsSuccess(true);
+        clearCart();
+        toast.success("Your order has been placed successfully!");
+      }, 2000);
+      
+    } catch (err) {
+      console.error(err);
+      setCardError("An unexpected error occurred. Please try again.");
       setIsSubmitting(false);
-      setIsSuccess(true);
-      clearCart();
-      toast.success("Your order has been placed successfully!");
-    }, 2000);
+    }
   };
 
   if (isSuccess) {
@@ -177,50 +233,33 @@ const Checkout = () => {
                 
                 <div>
                   <h2 className="text-lg font-semibold mb-4">Payment Details</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="col-span-2">
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input
-                        id="cardNumber"
-                        name="cardNumber"
-                        placeholder="1234 5678 9012 3456"
-                        value={formData.cardNumber}
-                        onChange={handleInputChange}
-                        required
+                  <div className="mb-6">
+                    <Label htmlFor="card-element">Credit or debit card</Label>
+                    <div className="mt-1 p-3 border rounded-md bg-background">
+                      <CardElement 
+                        id="card-element"
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: '16px',
+                              color: '#32325d',
+                              fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
+                              '::placeholder': {
+                                color: '#a0aec0',
+                              },
+                            },
+                            invalid: {
+                              color: '#9e2146',
+                            },
+                          },
+                        }}
                       />
                     </div>
-                    <div className="col-span-2">
-                      <Label htmlFor="cardHolder">Cardholder Name</Label>
-                      <Input
-                        id="cardHolder"
-                        name="cardHolder"
-                        value={formData.cardHolder}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="expiryDate">Expiry Date</Label>
-                      <Input
-                        id="expiryDate"
-                        name="expiryDate"
-                        placeholder="MM/YY"
-                        value={formData.expiryDate}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input
-                        id="cvv"
-                        name="cvv"
-                        placeholder="123"
-                        value={formData.cvv}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
+                    {cardError && (
+                      <div className="mt-2 text-sm text-destructive">
+                        {cardError}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -238,7 +277,7 @@ const Checkout = () => {
                   type="submit" 
                   className="w-full" 
                   size="lg" 
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !stripe}
                 >
                   {isSubmitting ? (
                     <span className="flex items-center">Processing...</span>
@@ -251,7 +290,7 @@ const Checkout = () => {
                 
                 <div className="flex items-center justify-center text-sm text-muted-foreground">
                   <Lock className="h-4 w-4 mr-2" /> 
-                  Secure checkout powered by EasyPay
+                  Secure checkout powered by Stripe
                 </div>
               </div>
             </form>
@@ -296,6 +335,15 @@ const Checkout = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Wrapper component that provides the Stripe context
+const Checkout = () => {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm />
+    </Elements>
   );
 };
 

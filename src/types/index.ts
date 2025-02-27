@@ -19,3 +19,10 @@ export interface PaymentInfo {
   expiryDate: string;
   cvv: string;
 }
+
+export interface StripePaymentIntent {
+  id: string;
+  client_secret: string;
+  amount: number;
+  status: string;
+}
