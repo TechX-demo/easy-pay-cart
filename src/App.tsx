@@ -14,6 +14,7 @@ import Checkout from "./pages/Checkout";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import AlipayConfig from "./pages/AlipayConfig";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/alipay-config" element={<AlipayConfig />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
