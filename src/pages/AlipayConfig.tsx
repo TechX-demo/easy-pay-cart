@@ -1,28 +1,39 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
+import { AlipayConfigType } from "@/components/AlipayConfigSheet";
+
+const defaultConfig: AlipayConfigType = {
+  appId: "",
+  privateKey: "",
+  publicKey: "",
+  gatewayUrl: "https://openapi.alipay.com/gateway.do",
+  sandbox: true,
+  merchantId: "",
+  returnUrl: window.location.origin + "/checkout",
+  notifyUrl: "",
+  appCertPublicKey: "",
+  alipayRootCert: "",
+  alipayCertPublicKey: "",
+  encryptKey: "",
+  signType: "RSA2",
+};
 
 const AlipayConfig = () => {
-  const [config, setConfig] = useState({
-    appId: "",
-    privateKey: "",
-    publicKey: "",
-    gatewayUrl: "https://openapi.alipay.com/gateway.do",
-    sandbox: true,
-    merchantId: "",
-    returnUrl: window.location.origin + "/checkout",
-    notifyUrl: "",
-    appCertPublicKey: "",
-    alipayRootCert: "",
-    alipayCertPublicKey: "",
-    encryptKey: "",
-    signType: "RSA2",
-  });
+  const [config, setConfig] = useState<AlipayConfigType>(defaultConfig);
+
+  useEffect(() => {
+    // Load saved config when the component mounts
+    const savedConfig = localStorage.getItem("alipayConfig");
+    if (savedConfig) {
+      setConfig(JSON.parse(savedConfig));
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
