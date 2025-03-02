@@ -20,9 +20,21 @@ export interface PaymentInfo {
   cvv: string;
 }
 
+export interface AlipayPaymentInfo {
+  email: string;
+  fullName: string;
+}
+
 export interface StripePaymentIntent {
   id: string;
   client_secret: string;
+  amount: number;
+  status: string;
+}
+
+export interface AlipayPaymentResponse {
+  paymentUrl: string;
+  outTradeNo: string;
   amount: number;
   status: string;
 }

@@ -9,21 +9,11 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { 
-  CreditCard, 
   ChevronLeft, 
   Lock, 
-  CheckCircle2 
+  CheckCircle2,
+  Mail
 } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
-
-// Replace with your own Stripe publishable key
-const stripePromise = loadStripe("pk_test_TYooMQauvdEDq54NiTphI7jx");
 
 interface CheckoutFormData {
   fullName: string;
@@ -34,7 +24,7 @@ interface CheckoutFormData {
   country: string;
 }
 
-// Checkout form with Stripe integration
+// Checkout form with Alipay integration
 const CheckoutForm = () => {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
@@ -49,11 +39,6 @@ const CheckoutForm = () => {
     zipCode: "",
     country: ""
   });
-  
-  // Stripe hooks
-  const stripe = useStripe();
-  const elements = useElements();
-  const [cardError, setCardError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -72,60 +57,36 @@ const CheckoutForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!stripe || !elements) {
-      // Stripe.js has not loaded yet
-      return;
-    }
-    
-    const cardElement = elements.getElement(CardElement);
-    
-    if (!cardElement) {
-      return;
-    }
-    
     setIsSubmitting(true);
-    setCardError(null);
     
     try {
-      // Create a payment method using the card element
-      const { error, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: formData.fullName,
-          email: formData.email,
-          address: {
-            city: formData.city,
-            line1: formData.address,
-            postal_code: formData.zipCode,
-            country: formData.country
-          }
+      // In a real application, you would send the payment data to your server
+      // which would interact with the Alipay API to create a payment
+      
+      console.log("Payment data:", {
+        amount: total,
+        currency: "CNY",
+        buyer_email: formData.email,
+        buyer_name: formData.fullName,
+        shipping_address: {
+          address: formData.address,
+          city: formData.city,
+          zip: formData.zipCode,
+          country: formData.country
         }
       });
-      
-      if (error) {
-        console.error(error);
-        setCardError(error.message || "Payment failed. Please try again.");
-        setIsSubmitting(false);
-        return;
-      }
-      
-      console.log("Payment method created successfully:", paymentMethod);
-      
-      // In a real application, you would send the payment method ID to your server
-      // to create a payment intent or charge the customer
       
       // For demo purposes, we'll simulate a successful payment
       setTimeout(() => {
         setIsSubmitting(false);
         setIsSuccess(true);
         clearCart();
-        toast.success("Your order has been placed successfully!");
+        toast.success("支付宝支付成功！");
       }, 2000);
       
     } catch (err) {
       console.error(err);
-      setCardError("An unexpected error occurred. Please try again.");
+      toast.error("支付过程中出现错误，请重试。");
       setIsSubmitting(false);
     }
   };
@@ -136,11 +97,11 @@ const CheckoutForm = () => {
         <div className="mb-6 flex justify-center">
           <CheckCircle2 className="h-16 w-16 text-green-500" />
         </div>
-        <h1 className="text-2xl font-bold mb-4">Order Confirmed!</h1>
+        <h1 className="text-2xl font-bold mb-4">订单确认!</h1>
         <p className="text-muted-foreground mb-8">
-          Thank you for your purchase. We have sent an order confirmation to your email.
+          感谢您的购买。我们已将订单确认信息发送至您的邮箱。
         </p>
-        <Button onClick={() => navigate("/products")}>Continue Shopping</Button>
+        <Button onClick={() => navigate("/products")}>继续购物</Button>
       </div>
     );
   }
@@ -152,21 +113,21 @@ const CheckoutForm = () => {
         className="mb-8" 
         onClick={() => navigate("/cart")}
       >
-        <ChevronLeft className="mr-2 h-4 w-4" /> Back to Cart
+        <ChevronLeft className="mr-2 h-4 w-4" /> 返回购物车
       </Button>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2">
           <div className="animate-slide-in">
-            <h1 className="text-2xl font-bold tracking-tight mb-8">Checkout</h1>
+            <h1 className="text-2xl font-bold tracking-tight mb-8">结账</h1>
             
             <form onSubmit={handleSubmit}>
               <div className="space-y-8">
                 <div>
-                  <h2 className="text-lg font-semibold mb-4">Shipping Information</h2>
+                  <h2 className="text-lg font-semibold mb-4">配送信息</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="col-span-2">
-                      <Label htmlFor="fullName">Full Name</Label>
+                      <Label htmlFor="fullName">姓名</Label>
                       <Input
                         id="fullName"
                         name="fullName"
@@ -176,7 +137,7 @@ const CheckoutForm = () => {
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label htmlFor="email">Email Address</Label>
+                      <Label htmlFor="email">电子邮箱</Label>
                       <Input
                         id="email"
                         name="email"
@@ -187,7 +148,7 @@ const CheckoutForm = () => {
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label htmlFor="address">Street Address</Label>
+                      <Label htmlFor="address">地址</Label>
                       <Input
                         id="address"
                         name="address"
@@ -197,7 +158,7 @@ const CheckoutForm = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="city">City</Label>
+                      <Label htmlFor="city">城市</Label>
                       <Input
                         id="city"
                         name="city"
@@ -207,7 +168,7 @@ const CheckoutForm = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="zipCode">ZIP Code</Label>
+                      <Label htmlFor="zipCode">邮政编码</Label>
                       <Input
                         id="zipCode"
                         name="zipCode"
@@ -217,7 +178,7 @@ const CheckoutForm = () => {
                       />
                     </div>
                     <div className="col-span-2">
-                      <Label htmlFor="country">Country</Label>
+                      <Label htmlFor="country">国家</Label>
                       <Input
                         id="country"
                         name="country"
@@ -232,34 +193,17 @@ const CheckoutForm = () => {
                 <Separator />
                 
                 <div>
-                  <h2 className="text-lg font-semibold mb-4">Payment Details</h2>
-                  <div className="mb-6">
-                    <Label htmlFor="card-element">Credit or debit card</Label>
-                    <div className="mt-1 p-3 border rounded-md bg-background">
-                      <CardElement 
-                        id="card-element"
-                        options={{
-                          style: {
-                            base: {
-                              fontSize: '16px',
-                              color: '#32325d',
-                              fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
-                              '::placeholder': {
-                                color: '#a0aec0',
-                              },
-                            },
-                            invalid: {
-                              color: '#9e2146',
-                            },
-                          },
-                        }}
-                      />
-                    </div>
-                    {cardError && (
-                      <div className="mt-2 text-sm text-destructive">
-                        {cardError}
+                  <h2 className="text-lg font-semibold mb-4">支付方式</h2>
+                  <div className="p-4 border rounded-md mb-4 bg-blue-50">
+                    <div className="flex items-center mb-2">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                        <Mail className="h-4 w-4 text-white" />
                       </div>
-                    )}
+                      <span className="font-medium">支付宝</span>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      提交订单后，您将被重定向到支付宝支付页面完成付款。
+                    </p>
                   </div>
                 </div>
                 
@@ -269,28 +213,28 @@ const CheckoutForm = () => {
                     htmlFor="terms"
                     className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    I agree to the terms and conditions
+                    我同意条款和条件
                   </label>
                 </div>
                 
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full bg-blue-500 hover:bg-blue-600" 
                   size="lg" 
-                  disabled={isSubmitting || !stripe}
+                  disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    <span className="flex items-center">Processing...</span>
+                    <span className="flex items-center">处理中...</span>
                   ) : (
                     <span className="flex items-center">
-                      <CreditCard className="mr-2 h-5 w-5" /> Complete Purchase
+                      使用支付宝支付 ¥{total.toFixed(2)}
                     </span>
                   )}
                 </Button>
                 
                 <div className="flex items-center justify-center text-sm text-muted-foreground">
                   <Lock className="h-4 w-4 mr-2" /> 
-                  Secure checkout powered by Stripe
+                  安全支付由支付宝提供
                 </div>
               </div>
             </form>
@@ -299,7 +243,7 @@ const CheckoutForm = () => {
         
         <div className="lg:col-span-1">
           <div className="rounded-lg border bg-card p-6 shadow-sm sticky top-24 animate-slide-in">
-            <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+            <h2 className="text-lg font-semibold mb-4">订单摘要</h2>
             
             <div className="space-y-4 mb-6">
               {items.map((item) => (
@@ -309,7 +253,7 @@ const CheckoutForm = () => {
                       {item.quantity} × {item.product.name}
                     </span>
                   </div>
-                  <span>${(item.product.price * item.quantity).toFixed(2)}</span>
+                  <span>¥{(item.product.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -318,17 +262,17 @@ const CheckoutForm = () => {
             
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>${total.toFixed(2)}</span>
+                <span className="text-muted-foreground">小计</span>
+                <span>¥{total.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Shipping</span>
-                <span>Free</span>
+                <span className="text-muted-foreground">运费</span>
+                <span>免费</span>
               </div>
               <Separator />
               <div className="flex justify-between font-semibold text-lg">
-                <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>总计</span>
+                <span>¥{total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -338,13 +282,9 @@ const CheckoutForm = () => {
   );
 };
 
-// Wrapper component that provides the Stripe context
+// Simple Checkout component
 const Checkout = () => {
-  return (
-    <Elements stripe={stripePromise}>
-      <CheckoutForm />
-    </Elements>
-  );
+  return <CheckoutForm />;
 };
 
 export default Checkout;
